@@ -1,0 +1,12 @@
+# https://mlflow.org
+
+mlflow:
+  _target_: lightning.pytorch.loggers.mlflow.MLFlowLogger
+  experiment_name: fundus-${task_name}
+  # run_name: ""
+  tracking_uri: http://172.31.10.111:18002
+  tags: null
+  save_dir: "${paths.output_dir}/mlruns"
+  prefix: ""
+  artifact_location: null
+  # run_id: ""

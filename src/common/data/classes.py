@@ -1,0 +1,36 @@
+TARGET_CLASS_LIST = {
+    "detail_dx": [
+        "EarlyDiabeticRetinopathy",
+        "AdvancedDiabeticRetinopathy",
+        "CentralRetinalVeinOcclusion",
+        "BranchRetinalVeinOcclusion",
+        "WetAge-relatedMacularDegeneration",
+        "DryAge-relatedMacularDegeneration",
+    ],
+    "dx": [
+        "DiabeticRetinopathy",
+        "RetinalVeinOcclusion",
+        "Age-relatedMacularDegeneration",
+    ],
+    "finding": [
+        "Hemorrhage",
+        "HardExudate",
+        "CottonWoolPatch",
+        "Drusen",
+        "VascularAbnormality",
+        "Membrane",
+        "ChorioretinalAtrophy",
+        "MyelinatedNerveFiber",
+        "RNFLDefect",
+        "GlaucomatousDiscChange",
+        "NonGlaucomatousDiscChange",
+        "MacularHole",
+    ],
+    "qunat": [
+        "CottonWoolPatch",
+        "HardExudate",
+        "Hemorrhage",
+        "Microaneurysm",
+        "Vessel",
+    ],
+}

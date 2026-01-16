@@ -1,0 +1,60 @@
+# @package _global_
+
+# to execute this experiment run:
+# python src/transfer_learning.py experiment=transfer_learning/vilref
+
+defaults:
+  - override /model: transfer_learning/vilref
+  - override /callbacks: default
+  - override /logger: csv
+  - override /trainer: ddp
+
+# ==============================
+# paths
+paths:
+  output_dir: "your_save_path"/${model.transfer_type}/${model_name}/${now:%Y%m%d_%H%M%S}
+
+# ==============================
+
+model_name: vilref
+task_name: transfer_learning.${model.transfer_type}
+
+trainer:
+  max_epochs: 50
+  num_sanity_val_steps: 0
+  devices: 1
+  strategy: ddp
+  log_every_n_steps: 1
+
+model:
+  transfer_type: finetuning # or linear_probing
+  learning_rate: 1e-3
+  weight_decay: 1e-4
+  warmup_epochs: 20
+
+callbacks:
+  model_checkpoint:
+    _target_: lightning.pytorch.callbacks.ModelCheckpoint
+    monitor: val/auroc
+    dirpath: ${paths.output_dir}/checkpoints
+    filename: "best-val_auroc-{val/auroc:.6f}-step_{step:07d}"
+    mode: max
+    save_last: False
+    auto_insert_metric_name: false
+    save_weights_only: true
+    save_on_train_epoch_end: false
+
+  early_stopping:
+    _target_: lightning.pytorch.callbacks.EarlyStopping
+    monitor: val/auroc
+    min_delta: 1e-5
+    patience: 30
+    verbose: false # DDP 환경에서 각 rank가 중복 로그를 출력하는 것을 방지
+    mode: max
+    strict: true
+    check_on_train_epoch_end: false # validation epoch 끝에만 체크
+
+logger:
+  csv:
+    _target_: lightning.pytorch.loggers.CSVLogger
+    save_dir: "${paths.output_dir}/logs"

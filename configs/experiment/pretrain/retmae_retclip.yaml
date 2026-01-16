@@ -1,0 +1,102 @@
+# @package _global_
+
+# to execute this experiment run:
+# python trainer/train.py experiment=dx
+
+defaults:
+  - override /data: pretrain/250k
+  - override /model: pretrain/retmae
+  - override /callbacks: default
+  - override /logger: aim
+  - override /trainer: ddp
+
+# all parameters below will be merged with parameters from default configurations set above
+# this allows you to overwrite only specified parameters
+
+test: False
+
+# ==============================
+# paths
+paths:
+  root_dir: "your_save_path"
+# ==============================
+
+# ==============================
+# logger setting
+run_name_postfix: retmae_retclip
+seed: 0
+task_name: ssl-${run_name_postfix}-${seed}
+
+# ==============================
+# trainer setting
+trainer:
+  max_epochs: 800
+  num_sanity_val_steps: 0
+  devices: 8
+  strategy: ddp_find_unused_parameters_false
+  check_val_every_n_epoch: 1
+
+# ==============================
+# model setting
+model:
+  gradient_accumulation_steps: 1
+  global_context:
+    _target_: src.tasks.pretrain.backbone.get_retclip
+  encoder:
+    mask_ratio: 0.8
+    random_masking: true
+    img_size: 224
+  decoder:
+    image_size: 224
+  compile: true
+
+# ==============================
+# data setting
+data:
+  train_batch_size: 96
+  val_batch_size: 128
+  test_batch_size: 128
+  num_workers: 8
+  prefetch_factor: 1
+  global_context: false
+  global_context_name: null
+
+# ==============================
+# callbacks setting
+callbacks:
+  model_checkpoint_module:
+    _target_: src.tasks.pretrain.callbacks.EncoderCheckpoint
+    dirpath: ${hydra:runtime.output_dir}/checkpoints
+    filename: "encoder_epoch_{epoch:07d}"
+    monitor: null
+    verbose: true
+    save_top_k: -1
+    auto_insert_metric_name: False
+    save_weights_only: True
+    save_on_train_epoch_end: True
+    every_n_epochs: 10
+    every_n_train_steps: null
+  model_checkpoint_module2:
+    _target_: src.tasks.pretrain.callbacks.LatestModelCheckpoint
+    dirpath: ${hydra:runtime.output_dir}/checkpoints
+    filename: "lm_epoch_{epoch:07d}"
+    every_n_epochs: 10
+    save_on_train_epoch_end: true
+    save_weights_only: false
+
+# ==============================
+# logger setting
+logger:
+  aim:
+    _target_: aim.pytorch_lightning.AimLogger
+    repo: "${paths.log_dir}/aim"
+    experiment: ${task_name}
+    train_metric_prefix: "train/"
+    val_metric_prefix: "val/"
+    test_metric_prefix: "test/"
+    system_tracking_interval: 10
+    log_system_params: true
+    capture_terminal_logs: false
+  csv:
+    _target_: lightning.pytorch.loggers.CSVLogger
+    save_dir: "${hydra:runtime.output_dir}"

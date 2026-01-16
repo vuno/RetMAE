@@ -1,0 +1,21 @@
+_target_: src.tasks.pretrain.module.TransferLearningModule
+
+encoder:
+  _target_: src.tasks.pretrain.encoder.SSLEncoder
+  model_name: timm/vit_base_patch16_224.augreg_in21k
+  algorithm: RetMAE # Use RetMAE backbone
+  pretrained: false # No pretrained weights by default
+  ckpt_path: null # Checkpoint path for loading pretrained model
+  load_ckpt_strict: true # Load checkpoint strictly
+  # Normalization layer
+  norm_layer:
+    _target_: torch.nn.LayerNorm
+    _partial_: true
+
+  img_size: 224
+  embed_dim: 768
+
+transfer_type: finetuning
+pool_type: cls_token
+learning_rate: 1e-3
+warmup_epochs: 10

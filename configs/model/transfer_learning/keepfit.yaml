@@ -1,0 +1,9 @@
+_target_: src.tasks.pretrain.module.TransferLearningModule
+
+encoder:
+  _target_: src.tasks.pretrain.backbone.falir.KeepFIT
+
+transfer_type: finetuning
+learning_rate: 1e-3
+warmup_epochs: 10
+pool_type: none

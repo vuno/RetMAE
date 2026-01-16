@@ -1,0 +1,24 @@
+defaults:
+  - _self_
+  - data: mnist
+  - model: mnist
+  - callbacks: default
+  - logger: null
+  - trainer: default
+  - paths: default
+  - hydra: default
+
+  - experiment: null
+  - hparams_search: null
+  - debug: null
+
+task_name: mnist
+
+tags: ["dev"]
+
+train: True
+test: True
+
+ckpt_path: null
+
+seed: 42

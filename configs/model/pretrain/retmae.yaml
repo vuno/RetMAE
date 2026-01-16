@@ -1,0 +1,140 @@
+# RetMAE (Retinal Masked Autoencoder) Configuration
+# This configuration implements RetMAE for retinal fundus image self-supervised learning
+# with mutual information maximization between global and high-frequency features.
+_target_: src.tasks.pretrain.module.RetMAEModule
+
+# Encoder Configuration
+encoder:
+  _target_: src.tasks.pretrain.encoder.SSLEncoder
+  model_name: timm/vit_base_patch16_224.augreg_in21k
+  algorithm: RetMAE # Use RetMAE backbone
+  pretrained: true # No pretrained weights by default
+  ckpt_path: null # Checkpoint path for loading pretrained model
+  load_ckpt_strict: true # Load checkpoint strictly
+
+  # Normalization layer
+  norm_layer:
+    _target_: torch.nn.LayerNorm
+    _partial_: true
+
+  # RetMAE-specific masking parameters
+  mask_ratio: 0.1 # Ratio of patches to mask (low for RetMAE)
+  visible_ratio: 0. # Ratio of visible patches
+  random_masking: true # Use random masking strategy
+  img_size: 224
+  embed_dim: 768
+
+# Decoder Configuration for MAE
+decoder:
+  _target_: src.tasks.pretrain.decoder.MAEDecoder
+  image_size: 518 # Must match encoder image size
+  patch_size: 16 # Must match encoder patch size
+  in_chans: 3 # Number of input channels
+  embed_dim: 768 # Encoder embedding dimension
+  decoder_embed_dim: 512 # Decoder embedding dimension (smaller)
+  decoder_depth: 8 # Number of decoder layers
+  decoder_num_heads: 16 # Number of decoder attention heads
+  mlp_ratio: 4.0 # MLP expansion ratio
+  norm_layer:
+    _target_: torch.nn.LayerNorm
+    _partial_: true
+
+# Target Generator for Reconstruction
+target_generator:
+  _target_: src.tasks.pretrain.target_generator.NormalizedPixelsGenerator
+  patch_size: 16 # Must match encoder patch size
+
+global_context:
+  _target_: src.tasks.pretrain.backbone.get_retclip
+
+# High-frequency MI Estimator
+mi_max_high_freq:
+  _target_: src.tasks.pretrain.backbone.mi_estimator.MINE
+  x_dim: 768 # Encoder feature dimension
+  y_dim: 768 # High-frequency feature dimension (same as encoder)
+  hidden_dim: 1024 # Hidden layer dimension in MI estimator
+
+# Main Loss Criterion for MAE Reconstruction
+criterion:
+  _target_: src.tasks.pretrain.criterion.MAELoss
+  criterion: l2 # Use L2 loss for reconstruction
+  reduce: false # Don't reduce loss automatically
+
+# Main Optimizer Configuration
+optimizer_main:
+  _target_: torch.optim.AdamW
+  _partial_: true
+  betas: [0.9, 0.95] # Optimized beta values for vision transformers
+  lr: 3e-4 # Learning rate
+  weight_decay: 0.01 # Weight decay for regularization
+
+# Learning Rate and Weight Decay Schedules
+# Main model weight decay schedule
+wd_schedule_main:
+  _target_: src.tasks.pretrain.utils.cosine_scheduler
+  _partial_: True
+  base_value: 0.00001 # Starting weight decay
+  final_value: 0.01 # Final weight decay
+
+# Main model learning rate schedule with warmup
+lr_schedule_main:
+  _target_: src.tasks.pretrain.utils.cosine_scheduler
+  _partial_: True
+  final_value: 1e-5 # Final learning rate
+  start_warmup_value: 1e-6 # Warmup starting learning rate
+  warmup_epochs: 10 # Number of warmup epochs
+
+# Global Context Distillation Optimizer
+optimizer_distill:
+  _target_: torch.optim.AdamW
+  _partial_: true
+  betas: [0.9, 0.95] # Optimized beta values
+  lr: 3e-4 # Learning rate for Global Context Distillation
+  weight_decay: 0 # No weight decay for MI components
+
+# Global Context Distillation learning rate schedule
+lr_schedule_distill:
+  _target_: src.tasks.pretrain.utils.cosine_scheduler
+  _partial_: True
+  final_value: 1e-5
+  start_warmup_value: 1e-6
+  warmup_epochs: 10
+
+# High-frequency MI Optimizer
+optimizer_hmi:
+  _target_: torch.optim.AdamW
+  _partial_: true
+  betas: [0.9, 0.95] # Optimized beta values
+  lr: 3e-4 # Learning rate for HMI
+  weight_decay: 0 # No weight decay for MI components
+
+# High-frequency MI learning rate schedule
+lr_schedule_hmi:
+  _target_: src.tasks.pretrain.utils.cosine_scheduler
+  _partial_: True
+  final_value: 1e-5
+  start_warmup_value: 1e-6
+  warmup_epochs: 10
+
+# EMA momentum schedule for high-frequency teacher model
+momentum_schedule:
+  _target_: src.tasks.pretrain.utils.cosine_scheduler
+  _partial_: True
+  base_value: 0.994 # Starting momentum
+  final_value: 1 # Final momentum (no decay)
+
+# Training Configuration
+compile: false # Disable PyTorch 2.0 compilation
+batch_size: ${data.train_batch_size} # Batch size from data config
+num_devices: ${trainer.devices} # Number of devices from trainer config
+num_nodes: ${trainer.num_nodes} # Number of nodes from trainer config
+gradient_accumulation_steps: 1 # Gradient accumulation steps
+gradient_clip_val: 3 # Gradient clipping threshold
+
+# Loss Weight Configuration
+lambda_distill: 0.01 # Global MI loss weight
+lambda_hmi: 1 # High-frequency MI loss weight
+
+# Checkpoint and Training Schedule
+module_ckpt_path: null # Path to checkpoint for loading
+high_freq_start_epoch: 40 # Epoch to start high-frequency MI training
