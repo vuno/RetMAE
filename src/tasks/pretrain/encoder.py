@@ -142,11 +142,6 @@ class SSLEncoder(nn.Module):
 
                 self.backbone = VilRef(**model_params)
 
-            elif algorithm == "PreTI":
-                from src.tasks.pretrain.backbone import PreTI
-
-                self.backbone = PreTI(**model_params)
-
         except ImportError as e:
             raise ImportError(f"Failed to import backbone for algorithm {algorithm}: {e}")
         except Exception as e:

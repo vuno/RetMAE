@@ -1,5 +1,0 @@
-- experiment=pretrain/FMI-MAE_base_224
-- seed=42
-- trainer.max_epochs=100
-- model.lambda_high_freq=0.1
-- model.lambda_teacher=0.1

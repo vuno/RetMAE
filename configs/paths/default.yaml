@@ -1,15 +1,22 @@
-# path to root directory
-# this requires PROJECT_ROOT environment variable to exist
-# you can replace it with "." if you want the root to be the current working directory
-root_dir: "your_save_path"
+# Path configuration. All concrete locations are read from environment variables
+# defined in `.env` (see `.env.example` at the repo root).
+#
+# OmegaConf resolves ${oc.env:NAME,default} at runtime: missing variables fall back
+# to the second argument, but you should set them explicitly in `.env`.
 
-# path to logging directory
-log_dir: ${paths.root_dir}
+# Repository root, populated by rootutils at import time.
+root_dir: ${oc.env:PROJECT_ROOT}
 
-# path to output directory, created dynamically by hydra
-# path generation pattern is specified in `configs/hydra/default.yaml`
-# use it to store all files generated during the run, like ckpts and metrics
+# Where datasets live (pre-training + downstream).
+data_root: ${oc.env:DATA_ROOT,/data}
+
+# Where pre-trained checkpoints live (baseline weights + RetMAE encoder).
+ckpt_root: ${oc.env:CKPT_ROOT,/checkpoints}
+
+# Where Hydra writes run outputs. Defaults to <repo>/outputs.
+output_root: ${oc.env:OUTPUT_ROOT,${paths.root_dir}/outputs}
+
+# Logging / Hydra-resolved paths.
+log_dir: ${paths.output_root}
 output_dir: ${hydra:runtime.output_dir}
-
-# path to working directory
 work_dir: ${hydra:runtime.cwd}

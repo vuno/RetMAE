@@ -1,0 +1,22 @@
+# Default config for `python src/finetune.py` (and the segmentation / data-efficient
+# variants). The experiment file (e.g. `experiment=finetune/retmae`) specifies the
+# downstream task, dataset, and pretrained encoder.
+defaults:
+  - _self_
+  - data: finetune/dr
+  - model: finetune/retmae
+  - callbacks: default
+  - logger: null
+  - trainer: default
+  - paths: default
+  - hydra: default
+
+  - experiment: null
+  - hparams_search: null
+  - debug: null
+
+task_name: retmae-finetune
+tags: ["dev"]
+
+ckpt_path: null
+seed: 42

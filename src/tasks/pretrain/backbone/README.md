@@ -1,150 +1,73 @@
-# Backbone Models Package
+# Backbone Models
 
-이 패키지는 다양한 백본 모델들을 모듈화된 구조로 제공합니다.
+Backbone implementations and external-baseline wrappers used during RetMAE pre-training
+(global-context distillation, MI estimation) and during downstream linear probing /
+fine-tuning.
 
-## 구조
+## Layout
 
 ```
 backbone/
-├── __init__.py          # 로더 함수들과 모델 레지스트리
-├── base.py              # 기본 클래스와 공통 유틸리티 (TimmViTBackbone 포함)
-├── mae.py               # RetMAE 모델
-├── falir.py             # FLAIR 관련 모델들 (FLAIR, KeepFIT)
-├── urfound.py           # UrFound 모델
-├── mi_estimator.py      # MI 추정기들 (MINE, InfoNCE)
-├── retclip.py           # RET-CLIP 모델
-├── retfound.py          # RETFound 모델
-└── README.md            # 사용 가이드
+├── __init__.py        # Loader functions and the `MODEL_REGISTRY` dispatcher
+├── base.py            # `BackboneBase` abstract class + `TimmViTBackbone`
+├── mae.py             # RetMAE encoder (frequency-aware MAE, this paper)
+├── mi_estimator.py    # MINE / InfoNCE estimators used by the MI loss (this paper)
+├── retclip.py         # RET-CLIP encoder (used as global-context teacher)
+├── retfound.py        # RETFound  (Zhou et al., 2023)
+├── falir.py           # FLAIR + KeepFIT
+├── urfound.py         # UrFound
+├── unimedclip.py      # UniMed-CLIP
+├── vilref.py          # ViLReF
+└── README.md
 ```
 
-## 사용법
-
-### 1. 개별 모델 로드
+## Usage
 
 ```python
-from src.tasks.pretrain.backbone import get_flair, get_dinov2, get_retmae
+from src.tasks.pretrain.backbone import (
+    get_retmae, get_retclip, get_retfound, get_flair, get_urfound,
+    get_model, list_available_models,
+)
 
-# FLAIR 모델
-flair_model = get_flair()
+retmae   = get_retmae(model_name="vit_base_patch16_224")
+retclip  = get_retclip()
+retfound = get_retfound()
 
-# DINOv2 모델
-dinov2_model = get_dinov2()
-
-# RetMAE 모델
-retmae_model = get_retmae(model_name="vit_base_patch16_224")
-```
-
-### 2. 범용 모델 로드 함수 사용
-
-```python
-from src.tasks.pretrain.backbone import get_model, list_available_models
-
-# 사용 가능한 모델 목록 확인
-print(list_available_models())
-
-# 모델 이름으로 로드
-model = get_model("flair")
-model = get_model("dinov2")
+# Or via the registry
 model = get_model("retmae", model_name="vit_base_patch16_224")
+print(list_available_models())
 ```
 
-### 3. 직접 클래스 import
+## Components introduced by this paper
 
-```python
-from src.tasks.pretrain.backbone import RetMAE, FLAIR, UrFound
+| File | Class | Role |
+|---|---|---|
+| `mae.py` | `MAEVisionTransformer`, `MAEDecoder` | Frequency-aware masking + MAE encoder/decoder |
+| `mi_estimator.py` | `MINE`, `InfoNCE` | Mutual-information estimators for the high-frequency MI loss |
 
-# 직접 인스턴스 생성
-retmae_model = RetMAE(model_name="vit_base_patch16_224")
-flair_model = FLAIR()
-urfound_model = UrFound()
-```
+## External baselines
 
-## 사용 가능한 모델들
+We ship thin wrappers around publicly released checkpoints purely to enable apples-to-apples
+comparison on the downstream tasks reported in the paper. Each baseline retains the
+license of its upstream release; users must obtain the original weights from the
+respective authors.
 
-- **flair**: FLAIR 모델
-- **urfound**: UrFound 모델
-- **dinov2**: DINOv2 Vision Transformer
-- **eva02**: EVA-02 Vision Transformer
-- **keepfit**: KeepFIT 모델
-- **retclip**: RET-CLIP 모델
-- **retfound**: RETFound 모델
-- **retmae**: RetMAE 모델
-- **mine**: MINE (Mutual Information Neural Estimation)
-- **infonce**: InfoNCE 모델
+| Wrapper | Upstream paper | Project |
+|---|---|---|
+| `retfound.py` | Zhou et al., *Nature* 2023 | https://github.com/rmaphoh/RETFound_MAE |
+| `retclip.py`  | Du et al., 2024 (RET-CLIP) | https://github.com/Zoxin-DU/RET-CLIP |
+| `falir.py`    | Silva-Rodríguez et al. 2024 (FLAIR) / Wu et al. 2024 (KeepFIT) | https://github.com/jusiro/FLAIR |
+| `urfound.py`  | Yu et al. 2024 (UrFound) | https://github.com/yukkai/UrFound |
+| `unimedclip.py` | Khattak et al. 2024 (UniMed-CLIP) | https://github.com/mbzuai-oryx/UniMed-CLIP |
+| `vilref.py`   | Wu et al. 2024 (ViLReF) | https://github.com/T6Yang/ViLReF |
 
-## 마이그레이션 가이드
+Checkpoint paths are resolved from the `CKPT_ROOT` environment variable; see
+the *Baselines* section of the top-level `README.md` for the expected directory
+layout.
 
-기존 코드에서 새로운 구조로 마이그레이션하려면:
+## Adding a new backbone
 
-### Before (기존)
-
-```python
-from src.tasks.pretrain.backbone import FLAIR, UrFound, MAEVisionTransformer
-
-flair = FLAIR()
-urfound = UrFound()
-mae = MAEVisionTransformer(model_name="vit_base_patch16_224")
-```
-
-### After (새로운 구조)
-
-```python
-from src.tasks.pretrain.backbone import get_flair, get_urfound, get_retmae
-
-flair = get_flair()
-urfound = get_urfound()
-retmae = get_retmae(model_name="vit_base_patch16_224")
-```
-
-또는 범용 함수 사용:
-
-```python
-from src.tasks.pretrain.backbone import get_model
-
-flair = get_model("flair")
-urfound = get_model("urfound")
-retmae = get_model("retmae", model_name="vit_base_patch16_224")
-```
-
-## 파일별 모델 구성
-
-### base.py
-
-- `BackboneBase`: 모든 백본 모델의 기본 클래스
-- `TimmViTBackbone`: Timm 기반 Vision Transformer 백본 (범용)
-
-### mae.py
-
-- `RetMAE`: Retina 특화 MAE 모델
-
-### falir.py
-
-- `FLAIR`: FLAIR 모델
-- `KeepFIT`: KeepFIT 모델
-
-### urfound.py
-
-- `UrFound`: UrFound 모델
-
-### mi_estimator.py
-
-- `MINE`: Mutual Information Neural Estimation
-- `InfoNCE`: InfoNCE 손실 함수
-
-### retclip.py
-
-- `RETClipBackbone`: RET-CLIP 모델
-
-### retfound.py
-
-- `RETFoundBackbone`: RETFound 모델
-
-## 장점
-
-1. **완전한 모듈화**: 각 모델이 개별 파일로 분리되어 관리가 용이
-2. **확장성**: 새로운 모델 추가가 매우 쉬움
-3. **일관성**: 모든 모델이 동일한 인터페이스를 제공
-4. **유연성**: 개별 클래스 또는 로더 함수 모두 사용 가능
-5. **중앙화**: 모든 모델이 한 곳에서 관리됨
-6. **명확한 구조**: 파일명만으로도 어떤 모델이 포함되어 있는지 알 수 있음
-7. **간소화**: 불필요한 모델들을 제거하여 핵심 모델들만 유지
+1. Create `<name>.py` exposing a class that subclasses `BackboneBase`.
+2. Register it in `__init__.py` (`MODEL_REGISTRY[<name>] = ...` and a `get_<name>()` loader).
+3. Add a corresponding `configs/model/finetune/<name>.yaml` if it should be available
+   for downstream evaluation.

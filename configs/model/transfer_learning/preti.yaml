@@ -1,9 +1,0 @@
-_target_: src.tasks.pretrain.module.TransferLearningModule
-
-encoder:
-  _target_: src.tasks.pretrain.backbone.preti.PreTI
-
-transfer_type: finetuning
-pool_type: cls_token
-learning_rate: 1e-3
-warmup_epochs: 10

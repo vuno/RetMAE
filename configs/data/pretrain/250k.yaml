@@ -1,5 +1,5 @@
 _target_: src.tasks.pretrain.datamodule.SelfSupMultiDM
-root: your_root_path
+root: ${paths.data_root}/DATASET_UNIFIED_V1
 image_folder_name: images
 label_file_name: labels
 suffix: base_proc-224x224
