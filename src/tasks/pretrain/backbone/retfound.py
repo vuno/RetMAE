@@ -11,7 +11,7 @@ from kornia.geometry.transform import resize
 from timm.models.vision_transformer import Block, PatchEmbed, VisionTransformer
 
 from src.tasks.pretrain.utils import standardize_input
-from src.utils import RankedLogger
+from src.utils import RankedLogger, ckpt_path as _ckpt
 
 log = RankedLogger(__name__, rank_zero_only=True)
 
@@ -118,9 +118,11 @@ class RETFoundBackbone(nn.Module):
         mlp_ratio: float = 4.0,
         norm_layer: nn.Module = nn.LayerNorm,
         norm_pix_loss: bool = False,
-        ckpt_path: str = "your_path/save/weights/ssl/RETFound_cfp_weights.pth",
+        ckpt_path: str | None = None,
     ):
         super().__init__()
+        if ckpt_path is None:
+            ckpt_path = str(_ckpt("retfound", "RETFound_cfp_weights.pth"))
 
         # --------------------------------------------------------------------------
         # MAE encoder specifics
@@ -307,7 +309,7 @@ class RETFound(nn.Module):
         self.embed_dim = embed_dim
 
         if model_type == "dinov2":
-            ckpt_path = "your_path/dev/weights/ssl/RETFound_dinov2_shanghai.pth"
+            ckpt_path = str(_ckpt("retfound", "RETFound_dinov2_shanghai.pth"))
             ckpt = torch.load(ckpt_path, map_location="cpu")
             new_ckpt = {}
             for k, v in ckpt["teacher"].items():
@@ -322,7 +324,7 @@ class RETFound(nn.Module):
                 embed_dim=embed_dim,
             )
         elif model_type == "mae":
-            ckpt_path = "your_path/dev/weights/ssl/RETFound_mae_shanghai.pth"
+            ckpt_path = str(_ckpt("retfound", "RETFound_mae_shanghai.pth"))
             ckpt = torch.load(ckpt_path, map_location="cpu")
             new_ckpt = {}
             for k, v in ckpt["model"].items():

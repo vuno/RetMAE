@@ -18,6 +18,7 @@ from torch import nn
 from torch.utils.checkpoint import checkpoint
 
 from src.tasks.pretrain.utils import standardize_input
+from src.utils import ckpt_path as _ckpt
 
 
 # Utility functions
@@ -369,7 +370,7 @@ class UniMedCLIP(nn.Module):
 
         # Load checkpoint and extract only visual weights
         full_ckpt = torch.load(
-            "your_path/dev/weights/ssl/unimed_clip_vit_b16.pt", map_location="cpu"
+            str(_ckpt("unimedclip", "unimed_clip_vit_b16.pt")), map_location="cpu"
         )["state_dict"]
 
         # Extract visual weights

@@ -9,7 +9,7 @@ from kornia.geometry.transform import resize
 from torch.utils.checkpoint import checkpoint
 
 from src.tasks.pretrain.utils import standardize_input
-from src.utils import RankedLogger
+from src.utils import RankedLogger, ckpt_path as _ckpt
 
 log = RankedLogger(__name__, rank_zero_only=True)
 
@@ -185,9 +185,11 @@ class RETClipBackbone(nn.Module):
         output_dim: int,
         use_flash_attention: bool = False,
         use_rn_for_embed: bool = False,
-        ckpt_path: str = "your_path/save/weights/ssl/ret-clip.pt",
+        ckpt_path: str | None = None,
     ):
         super().__init__()
+        if ckpt_path is None:
+            ckpt_path = str(_ckpt("retclip", "ret-clip.pt"))
         self.num_prefix_tokens = 1
         self.patch_size = patch_size
         self.input_resolution = input_resolution

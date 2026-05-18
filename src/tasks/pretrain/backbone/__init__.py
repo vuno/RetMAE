@@ -7,7 +7,6 @@ from .base import BackboneBase, TimmViTBackbone
 from .falir import FLAIR, KeepFIT
 from .mae import RetMAE
 from .mi_estimator import MINE, InfoNCE
-from .preti import PreTI
 from .retclip import RETClipBackbone
 from .retfound import RETFound
 from .unimedclip import UniMedCLIP
@@ -32,15 +31,6 @@ def get_vilref() -> VilRef:
         VilRef: 초기화된 VilRef 모델 인스턴스
     """
     return VilRef()
-
-
-def get_preti() -> PreTI:
-    """PreTI 모델의 인스턴스를 생성하여 반환합니다.
-
-    Returns:
-        PreTI: 초기화된 PreTI 모델 인스턴스
-    """
-    return PreTI()
 
 
 def get_flair() -> FLAIR:
@@ -173,7 +163,6 @@ MODEL_REGISTRY: Dict[str, callable] = {
     "mine": get_mine,
     "infonce": get_infonce,
     "vilref": get_vilref,
-    "preti": get_preti,
     "unimedclip": get_unimedclip,
 }
 
@@ -189,7 +178,6 @@ def get_model(model_name: str, **kwargs) -> Union[
     MINE,
     InfoNCE,
     VilRef,
-    PreTI,
     UniMedCLIP,
 ]:
     """모델 이름으로 모델을 생성하는 범용 함수입니다.
@@ -235,7 +223,6 @@ __all__ = [
     "MINE",
     "InfoNCE",
     "VilRef",
-    "PreTI",
     "UniMedCLIP",
     # Loader functions
     "get_flair",
@@ -249,7 +236,6 @@ __all__ = [
     "get_mine",
     "get_infonce",
     "get_vilref",
-    "get_preti",
     "get_unimedclip",
     # Utility functions
     "get_model",

@@ -177,7 +177,7 @@ class SelfSupMultiDMBase(DataModuleBase):
     def __init__(
         self,
         dataset_list: Dict[str, List[str]],
-        root: str = "your_path/DATASET_UNIFIED_V1",
+        root: str = "",
         image_folder_name: str = "images",
         label_file_name: str = "labels",
         suffix: Optional[str] = None,
@@ -247,7 +247,7 @@ class SelfSupMultiDM(SelfSupMultiDMBase):
 
     Args:
         dataset_list (Dict[str, List[str]]): List of datasets for train/val/test
-        root (str): Root directory path of the dataset. Defaults to "your_path/DATASET_UNIFIED_V1_PREPROC_512x512".
+        root (str): Root directory path of the dataset. Defaults to "".
         image_folder_name (str): Image folder name. Defaults to "images".
         label_file_name (str): Label file name. Defaults to "labels".
         suffix (Optional[str]): File suffix. Defaults to None.
@@ -267,7 +267,7 @@ class SelfSupMultiDM(SelfSupMultiDMBase):
     def __init__(
         self,
         dataset_list: Dict[str, List[str]],
-        root: str = "your_path/DATASET_UNIFIED_V1_PREPROC_512x512",
+        root: str = "",
         image_folder_name: str = "images",
         label_file_name: str = "labels",
         suffix: Optional[str] = None,
@@ -997,7 +997,7 @@ class TransferLearningDMBase(DataModuleBase):
     def __init__(
         self,
         dataset_list: Dict[str, List[str]],
-        root: str = "your_path/DATASET_UNIFIED_V1",
+        root: str = "",
         image_folder_name: str = "images",
         label_file_name: str = "labels",
         suffix: Optional[str] = None,
@@ -1076,7 +1076,7 @@ class TransferLearningDM(TransferLearningDMBase):
     def __init__(
         self,
         dataset_list: Dict[str, List[str]],
-        root: str = "your_path/DATASET_UNIFIED_V1",
+        root: str = "",
         image_folder_name: str = "images",
         label_file_name: str = "labels",
         suffix: Optional[str] = None,
@@ -1391,7 +1391,7 @@ class TorchTLSegmentationDM(TransferLearningDM):
     def __init__(
         self,
         dataset_list: Dict[str, List[str]],
-        root: str = "your_path/DATASET_UNIFIED_V1",
+        root: str = "",
         image_folder_name: str = "images",
         label_file_name: str = "labels",
         suffix: Optional[str] = None,
@@ -1799,7 +1799,7 @@ if __name__ == "__main__":
             "val": ["FIVES"],
             "test": ["CHASE", "DRIVE", "FIVES"],
         },
-        "root": "your_path/DATASET",
+        "root": "",
         "image_folder_name": "images",
         "label_file_name": "labels-duplicate_rm",
         "suffix": "base_proc-224x224",

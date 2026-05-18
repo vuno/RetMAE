@@ -160,9 +160,19 @@ cython_debug/
 #.idea/
 
 logs/
+outputs/
+runs/
 fig/
 .vscode/
+.idea/
 weights/
+checkpoints/
+
+# Logger backends
+mlruns/
+wandb/
+aim_repo/
+.aim/
 
 *.csv
 *.npy
@@ -175,4 +185,10 @@ weights/
 rp_cache/
 *.pt
 *.pth
+*.ckpt
 *.onnx
+*.safetensors
+
+# Allow figures committed under assets/ (paper / README assets)
+!assets/
+!assets/**

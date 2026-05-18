@@ -1,0 +1,24 @@
+# Default config for `python src/pretrain.py`. Concrete settings are supplied by
+# an experiment file under `configs/experiment/pretrain/` via `experiment=...`.
+defaults:
+  - _self_
+  - data: pretrain/250k
+  - model: pretrain/retmae
+  - callbacks: default
+  - logger: null
+  - trainer: default
+  - paths: default
+  - hydra: default
+
+  - experiment: null
+  - hparams_search: null
+  - debug: null
+
+task_name: retmae-pretrain
+tags: ["dev"]
+
+train: True
+test: False
+
+ckpt_path: null
+seed: 42

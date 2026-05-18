@@ -16,6 +16,7 @@ if importlib.util.find_spec("flash_attn"):
     FlashMHA = importlib.import_module("flash_attn.flash_attention").FlashMHA
 
 from src.tasks.pretrain.utils import standardize_input
+from src.utils import ckpt_path as _ckpt
 
 
 class Bottleneck(nn.Module):
@@ -901,7 +902,7 @@ class VilRef(nn.Module):
 
         # Load checkpoint and extract only visual weights
         full_ckpt = torch.load(
-            "your_path/dev/weights/ssl/ViLReF_ViT.pt", map_location="cpu"
+            str(_ckpt("vilref", "ViLReF_ViT.pt")), map_location="cpu"
         )["state_dict"]
         visual_ckpt = {}
         for k, v in full_ckpt.items():

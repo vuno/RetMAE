@@ -9,7 +9,7 @@ from kornia.geometry.transform import resize
 from timm.models.vision_transformer import VisionTransformer
 
 from src.tasks.pretrain.utils import standardize_input
-from src.utils import RankedLogger
+from src.utils import RankedLogger, ckpt_path as _ckpt
 
 log = RankedLogger(__name__, rank_zero_only=True)
 
@@ -17,10 +17,12 @@ log = RankedLogger(__name__, rank_zero_only=True)
 class UrFound(nn.Module):
     def __init__(
         self,
-        ckpt_path: str = "your_path/save/weights/ssl/urfound_mm.pth",
+        ckpt_path: str | None = None,
     ) -> None:
-        """UrFound 모델의 초기화 함수입니다."""
+        """Wrapper around the UrFound multi-modal pre-trained encoder."""
         super().__init__()
+        if ckpt_path is None:
+            ckpt_path = str(_ckpt("urfound", "urfound_mm.pth"))
 
         self.model = VisionTransformer(
             img_size=224,
@@ -57,7 +59,7 @@ class UrFound(nn.Module):
         return self.forward_features(x)
 
     def forward_features(self, x: torch.Tensor) -> torch.Tensor:
-        """특징을 추출하는 순전파 함수입니다."""
+        """Resize, standardise, and forward through UrFound."""
         if x.shape[2] != 224:
             x = resize(x, (224, 224))
 

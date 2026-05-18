@@ -6,7 +6,7 @@ import torch
 import torchvision
 from kornia.geometry.transform import resize
 
-from src.utils import RankedLogger
+from src.utils import RankedLogger, ckpt_path as _ckpt
 
 from .base import BackboneBase
 
@@ -14,12 +14,12 @@ log = RankedLogger(__name__, rank_zero_only=True)
 
 
 class FLAIRProjectionLayer(torch.nn.Module):
-    """FLAIR 모델의 프로젝션 레이어입니다.
+    """Projection layer used inside the FLAIR head.
 
     Args:
-        layer (torch.nn.Module): 프로젝션에 사용할 레이어
-        projection (bool): 프로젝션 적용 여부. Defaults to True.
-        norm (bool): 정규화 적용 여부. Defaults to True.
+        layer: projection module.
+        projection: whether to apply projection.
+        norm: whether to L2-normalise inputs/outputs.
     """
 
     def __init__(self, layer, projection=True, norm=True):
@@ -31,14 +31,7 @@ class FLAIRProjectionLayer(torch.nn.Module):
         self.projection = layer
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """입력 텐서에 프로젝션과 정규화를 적용합니다.
-
-        Args:
-            x (torch.Tensor): 입력 텐서
-
-        Returns:
-            torch.Tensor: 프로젝션과 정규화가 적용된 출력 텐서
-        """
+        """Apply projection and (optionally) L2 normalisation to ``x``."""
         if self.norm_modality:
             x = x / x.norm(dim=-1, keepdim=True)
 
@@ -51,16 +44,16 @@ class FLAIRProjectionLayer(torch.nn.Module):
 
 
 class FLAIR(torch.nn.Module):
-    """FLAIR 모델 구현체입니다.
+    """FLAIR vision-language pre-trained encoder.
 
     Args:
-        vision_type (str): 비전 인코더 타입. ["resnet_v1", "resnet_v2", "efficientnet"] 중 하나. Defaults to "resnet".
-        pretrained (bool): 사전학습된 가중치 사용 여부. Defaults to True.
-        proj_dim (int): 프로젝션 차원. Defaults to 512.
-        proj_bias (bool): 프로젝션 레이어의 편향 사용 여부. Defaults to False.
-        projection (bool): 프로젝션 적용 여부. Defaults to True.
-        norm (bool): 정규화 적용 여부. Defaults to True.
-        ckpt_path (str): 체크포인트 경로. Defaults to "your_path/weights/ssl/flair_resnet.pth".
+        vision_type: one of ``{"resnet_v1", "resnet_v2", "efficientnet"}``.
+        pretrained: load ImageNet-1K weights for the trunk.
+        proj_dim: projection dimension.
+        proj_bias: whether the projection layer uses a bias.
+        projection: enable the projection head.
+        norm: apply L2 normalisation in the projection layer.
+        ckpt_path: optional override; defaults to ``$CKPT_ROOT/flair/flair_resnet.pth``.
     """
 
     def __init__(
@@ -71,9 +64,11 @@ class FLAIR(torch.nn.Module):
         proj_bias=False,
         projection=True,
         norm=True,
-        ckpt_path="your_path/dev/weights/ssl/flair_resnet.pth",
+        ckpt_path: str | None = None,
     ):
         super().__init__()
+        if ckpt_path is None:
+            ckpt_path = str(_ckpt("flair", "flair_resnet.pth"))
         self.proj_dim = self.embed_dim = proj_dim
 
         # Assert vision encoders
@@ -189,17 +184,15 @@ class FLAIR(torch.nn.Module):
 
 
 class KeepFIT(FLAIR):
-    """KeepFIT 모델 클래스입니다.
+    """KeepFIT (FLAIR + MM) pre-trained encoder.
 
-    FLAIR 모델을 확장하여 KeepFIT 사전학습 가중치를 로드하고 사용합니다.
-
-    Args:
-        **kwargs: FLAIR 모델에 전달할 추가 인자들
+    Loads the same trunk as :class:`FLAIR` but with KeepFIT weights from
+    ``$CKPT_ROOT/keepfit/KeepFIT (flair+MM).pth``.
     """
 
     def __init__(self, **kwargs):
         super().__init__(
-            ckpt_path="your_path/dev/weights/ssl/KeepFIT (flair+MM).pth",
+            ckpt_path=str(_ckpt("keepfit", "KeepFIT (flair+MM).pth")),
             **kwargs,
         )
         self.num_prefix_tokens = 1
