@@ -1,13 +1,10 @@
 """Mutual Information Estimators including MINE and InfoNCE."""
 
-import numpy as np
+import math
+
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
-
-from src.utils import RankedLogger
-
-log = RankedLogger(__name__, rank_zero_only=True)
 
 
 class MINE(nn.Module):
@@ -15,12 +12,14 @@ class MINE(nn.Module):
 
     This module implements the MINE loss which provides a lower bound on mutual information
     between two random variables. It uses a neural network to learn a critic function that
-    distinguishes between positive pairs and negative samples.
+    distinguishes between positive pairs and negative samples. The sampled
+    Donsker-Varadhan objective follows Linear95/CLUB's MINE implementation:
+    https://github.com/Linear95/CLUB/blob/57b4ad70d73d1bab0539aee16c20376959e5b58b/mi_estimators.py#L198
 
     Args:
         x_dim (int): Dimension of the first input variable
         y_dim (int): Dimension of the second input variable
-        hidden_size (int, optional): Hidden dimension of the critic network. Defaults to 1024.
+        hidden_dim (int, optional): Hidden dimension of the critic network. Defaults to 1024.
     """
 
     def __init__(self, x_dim: int, y_dim: int, hidden_dim: int = 1024) -> None:
@@ -61,16 +60,22 @@ class MINE(nn.Module):
             target_feats = target_feats[:, 0]
 
         input_feats = self.input_norm(self.input_proj(input_feats))
-        x_tile = input_feats.unsqueeze(0).repeat((sample_size, 1, 1))
-        y_tile = target_feats.unsqueeze(1).repeat((1, sample_size, 1))
+        # Sample the marginal with replacement, as in the reference implementation.
+        random_index = torch.randint(sample_size, (sample_size,), device=target_feats.device)
+        target_shuffle = target_feats[random_index]
 
         T0 = self.F_func(torch.cat([input_feats, target_feats], dim=-1))
-        T1 = self.F_func(torch.cat([x_tile, y_tile], dim=-1))  # [sample_size, sample_size, 1]
+        T1 = self.F_func(torch.cat([input_feats, target_shuffle], dim=-1))
 
-        lower_bound = T0.mean() - (T1.logsumexp(dim=1).mean() - np.log(sample_size))
+        # logsumexp computes log(mean(exp(T1))) without overflowing exp(T1).
+        # Accumulate in float32 under mixed precision, retaining float64 when requested.
+        if T0.dtype in (torch.float16, torch.bfloat16):
+            T0, T1 = T0.float(), T1.float()
+        lower_bound = T0.mean() - (T1.logsumexp(dim=0).squeeze(-1) - math.log(sample_size))
         return lower_bound
 
     def learning_loss(self, input_feats: torch.Tensor, target_feats: torch.Tensor) -> torch.Tensor:
+        """Negate the MI lower bound so minimizing the loss maximizes MI."""
         return -self.forward(input_feats, target_feats)
 
 
@@ -101,6 +106,7 @@ class InfoNCE(nn.Module):
         self.initialize_weights()
 
     def initialize_weights(self) -> None:
+        """Initialize the feature projection's linear layers."""
         for m in self.modules():
             if isinstance(m, nn.Linear):
                 nn.init.trunc_normal_(m.weight, std=0.02)
@@ -109,6 +115,7 @@ class InfoNCE(nn.Module):
 
     @torch.no_grad()
     def _make_targets(self, n: int, device: torch.device) -> torch.Tensor:
+        """Return diagonal positive-pair indices on the logits' device."""
         # positives are on the diagonal for cross-view logits
         return torch.arange(n, device=device)
 
@@ -152,4 +159,5 @@ class InfoNCE(nn.Module):
         return 0.5 * (loss_xy + loss_yx)
 
     def learning_loss(self, input_feats: torch.Tensor, target_feats: torch.Tensor) -> torch.Tensor:
+        """Return the contrastive loss for minimization."""
         return self.forward(input_feats, target_feats)
